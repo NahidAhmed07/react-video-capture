@@ -22,10 +22,11 @@ export default function Timer() {
     return () => {
       clearInterval(intervalID);
     };
-  }, []);
+  }, [intervalID]);
 
-  if (time === 31) {
+  if (time === 310000000000000) {
     stopRecording();
+    startRecording()
   }
   return (
     <span className="timer">{time < 10 ? "0" + time : time}</span>
