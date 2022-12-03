@@ -8,8 +8,8 @@ import VideoCapture from "./component/VideoCapture";
 
 export default function App() {
   const [camera, setCamera] = useState("user");
-  const mediaRecorder = useRef(null)
-  const [recordedChunks, setRecordedChunks] = useState([])
+  const mediaRecorder = useRef(null);
+  const [recordedChunks, setRecordedChunks] = useState([]);
 
   const options = {
     audioBitsPerSecond: 128000,
@@ -26,10 +26,7 @@ export default function App() {
     [setRecordedChunks]
   );
 
-
-
   const handleDownload = useCallback(() => {
-
     if (recordedChunks.length) {
       const blob = new Blob(recordedChunks, {
         type: "video/webm",
@@ -46,23 +43,18 @@ export default function App() {
     }
   }, [recordedChunks]);
 
-
-
-
   const handleStartCapturing = useCallback(() => {
-    
     try {
       mediaRecorder.current = new MediaRecorder(window.stream, options);
-     
     } catch (err) {
       alert("Exception while creating MediaRecorder");
       console.log(err);
       return;
     }
-    mediaRecorder.current.addEventListener('error', function(err){
-      alert('get error')
-      console.log(err)
-    })
+    mediaRecorder.current.addEventListener("error", function (err) {
+      alert("get error");
+      console.log(err);
+    });
 
     mediaRecorder.current.addEventListener(
       "dataavailable",
@@ -70,20 +62,14 @@ export default function App() {
     );
     mediaRecorder.current.start();
     console.log("media recorder started ");
-  }, [ mediaRecorder, handleDataAvailable]);
-
-
-
+  }, [mediaRecorder, handleDataAvailable]);
 
   console.log(mediaRecorder);
   function handleStopCapturing() {
     console.log(mediaRecorder);
     mediaRecorder.current.stop();
-    handleDownload()
-
+    handleDownload();
   }
-
-
 
   // const _width = window.innerWidth;
   // const _height = window.innerHeight;
@@ -134,6 +120,17 @@ export default function App() {
           }}
         >
           Stop
+        </button>
+        <button
+          className="stop-btn"
+          onClick={() => {
+            const spc = navigator.mediaDevices.getSupportedConstraints();
+            const ale  = JSON.stringify(spc)
+            navigator.clipboard.writeText(ale);
+
+          }}
+        >
+          copy
         </button>
 
         <button

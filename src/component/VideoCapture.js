@@ -14,8 +14,8 @@ export default function VideoCapture({ camera = "user", audio = true }) {
 
   async function  hasGetUserMedia() {
     
-    const sg = await navigator.mediaDevices.enumerateDevices()
-    console.log(JSON.stringify(sg))
+    // const sg = await navigator.mediaDevices.enumerateDevices()
+    // console.log(JSON.stringify(sg))
     // const mst =  MediaStreamTrack();
     // console.log(mst)
     return !!(
@@ -26,6 +26,7 @@ export default function VideoCapture({ camera = "user", audio = true }) {
     );
   }
   if (hasGetUserMedia()) {
+
     navigator.getUserMedia(
       options,
       function (localStream) {
