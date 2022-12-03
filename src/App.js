@@ -1,25 +1,25 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {  useEffect, useState } from "react";
 import styled from "styled-components";
 import VideoCapture from "./component/VideoCapture";
 
 // import Webcam from "react-webcam";
 
 export default function App() {
-  const [chunk, setChunk] = useState([]);
+  // const [chunk, setChunk] = useState([]);
   const [camera, setCamera] = useState("user");
   const [time, setTime] = useState(0);
   const [intervalID, setIntervalID] = useState(-1);
 
-  const webcamRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
+  // const webcamRef = useRef(null);
+  // const mediaRecorderRef = useRef(null);
   const [capturing, setCapturing] = useState(false);
   const [recordedChunks, setRecordedChunks] = useState([]);
-  const options = {
-    audioBitsPerSecond: 128000,
-    videoBitsPerSecond: 2500000,
-    mimeType: "video/webm",
-  };
+  // const options = {
+  //   audioBitsPerSecond: 128000,
+  //   videoBitsPerSecond: 2500000,
+  //   mimeType: "video/webm",
+  // };
   // const forceUpdate = React.useCallback(() => setTime((prev) => prev + 1), []);
 
   // const Recorder = new MediaRecorder(stream, options)
@@ -32,6 +32,8 @@ export default function App() {
   // }
 
   const startRecording = () => {
+    setCapturing(true);
+    setRecordedChunks([])
     const inter = setInterval(() => {
       setTime((prev) => prev + 1);
     }, 1000);
@@ -65,15 +67,15 @@ export default function App() {
     stopRecording();
   }
 
-  const videoConstraints = {
-    width: 420,
-    height: 720,
-  };
-  const audioConstraints = {
-    suppressLocalAudioPlayback: false,
-    noiseSuppression: true,
-    echoCancellation: true,
-  };
+  // const videoConstraints = {
+  //   width: 420,
+  //   height: 720,
+  // };
+  // const audioConstraints = {
+  //   suppressLocalAudioPlayback: false,
+  //   noiseSuppression: true,
+  //   echoCancellation: true,
+  // };
 
   return (
     <Wrapper>
