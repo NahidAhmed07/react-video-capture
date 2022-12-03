@@ -1,12 +1,13 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
-import VideoCapture from "./component/VideoCapture";
-
 // import Webcam from "react-webcam";
 
+
+
 export default function App() {
-  const [chunk, setChunk] = useState([]);
+  // const { previewStream, startRecording, stopRecording, mediaBlobUrl } =
+  //   useReactMediaRecorder({ video: true });
   const [camera, setCamera] = useState("user");
   const [time, setTime] = useState(0);
   const [intervalID, setIntervalID] = useState(-1);
@@ -15,21 +16,8 @@ export default function App() {
   const mediaRecorderRef = useRef(null);
   const [capturing, setCapturing] = useState(false);
   const [recordedChunks, setRecordedChunks] = useState([]);
-  const options = {
-    audioBitsPerSecond: 128000,
-    videoBitsPerSecond: 2500000,
-    mimeType: "video/webm",
-  };
+
   // const forceUpdate = React.useCallback(() => setTime((prev) => prev + 1), []);
-
-  // const Recorder = new MediaRecorder(stream, options)
-
-
-  // Recorder.ondataavailable = (e) =>{
-  //   console.log(e.data);
-  //   setChunk(prev => [...prev, e.data])
-
-  // }
 
   const startRecording = () => {
     const inter = setInterval(() => {
@@ -50,8 +38,52 @@ export default function App() {
     };
   }, []);
 
+  const handleDataAvailable = useCallback(
+    ({ data }) => {
+      if (data.size > 0) {
+        setRecordedChunks((prev) => prev.concat(data));
+      }
+    },
+    [setRecordedChunks]
+  );
+
   // const _width = window.innerWidth;
   // const _height = window.innerHeight;
+
+  const startVideoCapturing = useCallback(() => {
+    setCapturing(true);
+    mediaRecorderRef.current = new MediaRecorder(webcamRef.current.stream, {
+      mimeType: "video/webm",
+    });
+    mediaRecorderRef.current.addEventListener(
+      "dataavailable",
+      handleDataAvailable
+    );
+    mediaRecorderRef.current.start();
+  }, [webcamRef, setCapturing, mediaRecorderRef, handleDataAvailable]);
+
+  const stopVideoCapturing = useCallback(() => {
+    if (mediaRecorderRef.state === "inactive") return;
+    mediaRecorderRef.current.stop();
+    setCapturing(false);
+  }, [mediaRecorderRef, setCapturing]);
+
+  const handleDownload = useCallback(() => {
+    if (recordedChunks.length) {
+      const blob = new Blob(recordedChunks, {
+        type: "video/webm",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      document.body.appendChild(a);
+      a.style = "display: none";
+      a.href = url;
+      a.download = "react-webcam-stream-capture.webm";
+      a.click();
+      window.URL.revokeObjectURL(url);
+      setRecordedChunks([]);
+    }
+  }, [recordedChunks]);
 
   const handleSwap = () => {
     if (camera === "user") {
@@ -62,6 +94,7 @@ export default function App() {
   };
 
   if (time === 31) {
+    stopVideoCapturing();
     stopRecording();
   }
 
@@ -78,23 +111,56 @@ export default function App() {
   return (
     <Wrapper>
       <div className="top-bar py-2 back-button d-flex justify-content-between px-3">
-        <button className="btn-0 border-1 border-secondary text-white">
+        <button
+          className="btn-0 border-1 border-secondary text-white"
+        
+        >
+          
           Back
         </button>
         {recordedChunks.length > 0 && (
-          <button className="download-btn btn btn-secondary">Download</button>
+          <button
+            onClick={handleDownload}
+            className="download-btn btn btn-secondary"
+          >
+             Download
+          </button>
         )}
       </div>
 
-     <VideoCapture/>
+      <Webcam
+        height={780}
+        width={420}
+        audio={true}
+        mirrored={true}
+        ref={webcamRef}
+        videoConstraints={{
+          ...videoConstraints,
+          facingMode: camera,
+          aspectRatio: "0.66666",
+        }}
+        audioConstraints={audioConstraints}
+        muted={true}
+        className="video_container"
+        style={{
+          width: "100%",
+          height: "100%",
+          position: "absolute",
+          objectFit: "cover",
+          objectPosition: "center",
+          aspectRatio: "9/16",
+        }}
+      />
+
+      {/* <VideoPreview stream={previewStream} />; */}
       <div className="controls">
         <span className="timer">{time < 10 ? "0" + time : time}</span>
         {capturing ? (
           <button
             className="stop-btn"
             onClick={() => {
+              stopVideoCapturing();
               stopRecording();
-              // Recorder.stop()
             }}
           >
             Stop
@@ -103,8 +169,8 @@ export default function App() {
           <button
             className="start-btn"
             onClick={() => {
+              startVideoCapturing();
               startRecording();
-              // Recorder.start()
             }}
           >
             Start
