@@ -6,17 +6,17 @@ export default function VideoCapture({ camera = "user", audio = true }) {
   const options = {
     audio: audio,
     video: {
-      // height: {
-      //   max: 800,
-      //   ideal: 720,
-      //   min: 500,
+      height: {
+        max: 1080,
+        ideal: window.innerHeight,
+        min: 360,
         
-      // },
-      // width: {
-      //   max: 500,
-      //   ideal: 480,
-      //   min: 320,
-      // },
+      },
+      width: {
+        max: 720,
+        ideal: window.innerWidth,
+        min: 320,
+      },
       aspectRatio: 9 / 16,
       facingMode: camera,
       frameRate: 30,
