@@ -8,9 +8,9 @@ export default function VideoCapture({ camera = "user", audio = true }) {
     video: {
      
       width: {
-        max: 480,
+        max: 720,
         ideal: window.innerWidth,
-        min: 320,
+        min: 240,
       },
       aspectRatio: 9 / 16,
       facingMode: camera,
