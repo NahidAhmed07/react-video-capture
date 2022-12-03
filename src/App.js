@@ -1,56 +1,89 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, {  useEffect, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import styled from "styled-components";
+import Timer from "./component/Timer";
 import VideoCapture from "./component/VideoCapture";
 
 // import Webcam from "react-webcam";
 
 export default function App() {
-  // const [chunk, setChunk] = useState([]);
   const [camera, setCamera] = useState("user");
-  const [time, setTime] = useState(0);
-  const [intervalID, setIntervalID] = useState(-1);
+  const mediaRecorder = useRef(null)
+  const [recordedChunks, setRecordedChunks] = useState([])
 
-  // const webcamRef = useRef(null);
-  // const mediaRecorderRef = useRef(null);
-  const [capturing, setCapturing] = useState(false);
-  const [recordedChunks, setRecordedChunks] = useState([]);
-  // const options = {
-  //   audioBitsPerSecond: 128000,
-  //   videoBitsPerSecond: 2500000,
-  //   mimeType: "video/webm",
-  // };
-  // const forceUpdate = React.useCallback(() => setTime((prev) => prev + 1), []);
-
-  // const Recorder = new MediaRecorder(stream, options)
-
-
-  // Recorder.ondataavailable = (e) =>{
-  //   console.log(e.data);
-  //   setChunk(prev => [...prev, e.data])
-
-  // }
-
-  const startRecording = () => {
-    setCapturing(true);
-    setRecordedChunks([])
-    const inter = setInterval(() => {
-      setTime((prev) => prev + 1);
-    }, 1000);
-    setIntervalID(inter);
+  const options = {
+    audioBitsPerSecond: 128000,
+    videoBitsPerSecond: 2500000,
+    mimeType: "video/webm",
   };
 
-  const stopRecording = () => {
-    clearInterval(intervalID);
-    setIntervalID(-1);
-    setTime(0);
-  };
+  const handleDataAvailable = useCallback(
+    ({ data }) => {
+      if (data.size > 0) {
+        setRecordedChunks((prev) => prev.concat(data));
+      }
+    },
+    [setRecordedChunks]
+  );
 
-  useEffect(() => {
-    return () => {
-      clearInterval(intervalID);
-    };
-  }, []);
+
+
+  const handleDownload = useCallback(() => {
+
+    if (recordedChunks.length) {
+      const blob = new Blob(recordedChunks, {
+        type: "video/webm",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      document.body.appendChild(a);
+      a.style = "display: none";
+      a.href = url;
+      a.download = "react-webcam-stream-capture.webm";
+      a.click();
+      window.URL.revokeObjectURL(url);
+      setRecordedChunks([]);
+    }
+  }, [recordedChunks]);
+
+
+
+
+  const handleStartCapturing = useCallback(() => {
+    
+    try {
+      mediaRecorder.current = new MediaRecorder(window.stream, options);
+     
+    } catch (err) {
+      alert("Exception while creating MediaRecorder");
+      console.log(err);
+      return;
+    }
+    mediaRecorder.current.addEventListener('error', function(err){
+      alert('get error')
+      console.log(err)
+    })
+
+    mediaRecorder.current.addEventListener(
+      "dataavailable",
+      handleDataAvailable
+    );
+    mediaRecorder.current.start();
+    console.log("media recorder started ");
+  }, [ mediaRecorder, handleDataAvailable]);
+
+
+
+
+  console.log(mediaRecorder);
+  function handleStopCapturing() {
+    console.log(mediaRecorder);
+    mediaRecorder.current.stop();
+    handleDownload()
+
+  }
+
+
 
   // const _width = window.innerWidth;
   // const _height = window.innerHeight;
@@ -62,10 +95,6 @@ export default function App() {
       setCamera("user");
     }
   };
-
-  if (time === 31) {
-    stopRecording();
-  }
 
   // const videoConstraints = {
   //   width: 420,
@@ -84,34 +113,36 @@ export default function App() {
           Back
         </button>
         {recordedChunks.length > 0 && (
-          <button className="download-btn btn btn-secondary">Download</button>
+          <button
+            className="download-btn btn btn-secondary"
+            onClick={handleDownload}
+          >
+            Download
+          </button>
         )}
       </div>
 
-     <VideoCapture/>
+      <VideoCapture />
       <div className="controls">
-        <span className="timer">{time < 10 ? "0" + time : time}</span>
-        {capturing ? (
-          <button
-            className="stop-btn"
-            onClick={() => {
-              stopRecording();
-              // Recorder.stop()
-            }}
-          >
-            Stop
-          </button>
-        ) : (
-          <button
-            className="start-btn"
-            onClick={() => {
-              startRecording();
-              // Recorder.start()
-            }}
-          >
-            Start
-          </button>
-        )}
+        <Timer />
+
+        <button
+          className="stop-btn"
+          onClick={() => {
+            handleStopCapturing();
+          }}
+        >
+          Stop
+        </button>
+
+        <button
+          className="start-btn"
+          onClick={() => {
+            handleStartCapturing();
+          }}
+        >
+          Start
+        </button>
 
         <button className="toggleCamera" onClick={handleSwap}>
           Flip
