@@ -6,14 +6,9 @@ export default function VideoCapture({ camera = "user", audio = true }) {
   const options = {
     audio: audio,
     video: {
-      height: {
-        max: 1080,
-        ideal: window.innerHeight,
-        min: 360,
-        
-      },
+     
       width: {
-        max: 720,
+        max: 480,
         ideal: window.innerWidth,
         min: 320,
       },
