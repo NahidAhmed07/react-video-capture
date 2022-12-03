@@ -6,13 +6,18 @@ export default function VideoCapture({ camera = "user", audio = true }) {
   const options = {
     audio: audio,
     video: {
-      aspectRatio: 9 / 16,
+      aspectRatio:{ exact: 0.5625 },
       facingMode: camera,
       frameRate: 30,
     },
   };
 
-  function hasGetUserMedia() {
+  async function  hasGetUserMedia() {
+    
+    const sg = await navigator.mediaDevices.enumerateDevices()
+    console.log(JSON.stringify(sg))
+    // const mst =  MediaStreamTrack();
+    // console.log(mst)
     return !!(
       navigator.getUserMedia ||
       navigator.webkitGetUserMedia ||
@@ -25,6 +30,8 @@ export default function VideoCapture({ camera = "user", audio = true }) {
       options,
       function (localStream) {
         window.stream = localStream;
+        // console.log(localStream.getVideoTracks())
+        // alert(JSON.stringify(localStream.getVideoTracks()[0]))
         if (videoRef.current) {
           videoRef.current.srcObject = localStream;
         }
@@ -33,6 +40,7 @@ export default function VideoCapture({ camera = "user", audio = true }) {
         alert("getUserMedia() is not supported in your browser");
       }
     );
+
   } else {
     alert("getUserMedia() is not supported in your browser");
   }
