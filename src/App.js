@@ -16,7 +16,8 @@ export default function App() {
     videoBitsPerSecond: 2500000,
     mimeType: "video/webm",
   };
-
+const sct = window.screen.orientation.type
+console.log(sct)
   const handleDataAvailable = useCallback(
     ({ data }) => {
       if (data.size > 0) {
@@ -107,6 +108,10 @@ export default function App() {
             Download
           </button>
         )}
+
+     
+         <h5> screen mode: {sct}</h5>
+        
       </div>
 
       <VideoCapture />
@@ -179,7 +184,7 @@ const Wrapper = styled.div`
   .video_container {
     position: absolute;
     inset: 0;
-    height: 100vh;
+    height: 80vh;
     widows: 100vw;
   }
 
