@@ -1,29 +1,43 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
-import Timer from "./component/Timer";
-import VideoCapture from "./component/VideoCapture";
+import Webcam from "react-webcam";
 
-// import Webcam from "react-webcam";
+
 
 export default function App() {
+  // const { previewStream, startRecording, stopRecording, mediaBlobUrl } =
+  //   useReactMediaRecorder({ video: true });
   const [camera, setCamera] = useState("user");
-  const mediaRecorder = useRef(null);
+  const [time, setTime] = useState(0);
+  const [intervalID, setIntervalID] = useState(-1);
+
+  const webcamRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const [capturing, setCapturing] = useState(false);
   const [recordedChunks, setRecordedChunks] = useState([]);
 
-  const options = {
-    audioBitsPerSecond: 128000,
-    videoBitsPerSecond: 2500000,
-    mimeType: "video/webm",
+  // const forceUpdate = React.useCallback(() => setTime((prev) => prev + 1), []);
+
+  const startRecording = () => {
+    const inter = setInterval(() => {
+      setTime((prev) => prev + 1);
+    }, 1000);
+    setIntervalID(inter);
   };
 
-  try {
-    window.screen.orientation.lock("portrait");
-  } catch (err) {
-    alert("error");
-  }
-  const sct = window.screen.orientation.type;
-  console.log(sct);
+  const stopRecording = () => {
+    clearInterval(intervalID);
+    setIntervalID(-1);
+    setTime(0);
+  };
+
+  useEffect(() => {
+    return () => {
+      clearInterval(intervalID);
+    };
+  }, []);
+
   const handleDataAvailable = useCallback(
     ({ data }) => {
       if (data.size > 0) {
@@ -32,6 +46,27 @@ export default function App() {
     },
     [setRecordedChunks]
   );
+
+  // const _width = window.innerWidth;
+  // const _height = window.innerHeight;
+
+  const startVideoCapturing = useCallback(() => {
+    setCapturing(true);
+    mediaRecorderRef.current = new MediaRecorder(webcamRef.current.stream, {
+      mimeType: "video/webm",
+    });
+    mediaRecorderRef.current.addEventListener(
+      "dataavailable",
+      handleDataAvailable
+    );
+    mediaRecorderRef.current.start();
+  }, [webcamRef, setCapturing, mediaRecorderRef, handleDataAvailable]);
+
+  const stopVideoCapturing = useCallback(() => {
+    if (mediaRecorderRef.state === "inactive") return;
+    mediaRecorderRef.current.stop();
+    setCapturing(false);
+  }, [mediaRecorderRef, setCapturing]);
 
   const handleDownload = useCallback(() => {
     if (recordedChunks.length) {
@@ -50,37 +85,6 @@ export default function App() {
     }
   }, [recordedChunks]);
 
-  const handleStartCapturing = useCallback(() => {
-    try {
-      mediaRecorder.current = new MediaRecorder(window.stream, options);
-    } catch (err) {
-      alert("Exception while creating MediaRecorder");
-      console.log(err);
-      return;
-    }
-    mediaRecorder.current.addEventListener("error", function (err) {
-      alert("get error");
-      console.log(err);
-    });
-
-    mediaRecorder.current.addEventListener(
-      "dataavailable",
-      handleDataAvailable
-    );
-    mediaRecorder.current.start();
-    console.log("media recorder started ");
-  }, [mediaRecorder, handleDataAvailable]);
-
-  console.log(mediaRecorder);
-  function handleStopCapturing() {
-    console.log(mediaRecorder);
-    mediaRecorder.current.stop();
-    handleDownload();
-  }
-
-  // const _width = window.innerWidth;
-  // const _height = window.innerHeight;
-
   const handleSwap = () => {
     if (camera === "user") {
       setCamera("environment");
@@ -89,66 +93,94 @@ export default function App() {
     }
   };
 
-  // const videoConstraints = {
-  //   width: 420,
-  //   height: 720,
-  // };
-  // const audioConstraints = {
-  //   suppressLocalAudioPlayback: false,
-  //   noiseSuppression: true,
-  //   echoCancellation: true,
-  // };
+  if (time === 31) {
+    stopVideoCapturing();
+    stopRecording();
+  }
+
+  const videoConstraints = {
+    width: {ideal:480},
+    height: {ideal:720},
+    aspectRatio:9/16,
+    frameRate:{
+      min:25,
+      ideal:30,
+    }
+  };
+  const audioConstraints = {
+    suppressLocalAudioPlayback: false,
+    noiseSuppression: true,
+    echoCancellation: true,
+  };
 
   return (
     <Wrapper>
-      <div className="top-bar py-2 back-button d-flex justify-content-between px-3">
-        <p>change 7 portrai ett</p>
-        <button className="btn-0 border-1 border-secondary text-white">
+      <div className="top-bar py-2 back-button  px-3">
+        <button
+          className="btn-0 border-1 border-secondary text-white"
+        
+        >
+          
           Back
         </button>
         {recordedChunks.length > 0 && (
           <button
-            className="download-btn btn btn-secondary"
             onClick={handleDownload}
+            className="download-btn btn btn-secondary"
           >
-            Download
+             Download
           </button>
         )}
-
-        <h5> screen mode: {sct}</h5>
       </div>
 
-      <VideoCapture />
+      <Webcam
+        height={780}
+        width={420}
+        audio={true}
+        mirrored={true}
+        ref={webcamRef}
+        videoConstraints={{
+          ...videoConstraints,
+          facingMode: camera,
+          aspectRatio: "0.66666",
+        }}
+        audioConstraints={audioConstraints}
+        muted={true}
+        className="video_container"
+        style={{
+          width: "100%",
+          height: "100%",
+          position: "absolute",
+          objectFit: "cover",
+          objectPosition: "center",
+          aspectRatio: "9/16",
+        }}
+      />
+
+      {/* <VideoPreview stream={previewStream} />; */}
       <div className="controls">
-        <Timer />
-
-        <button
-          className="stop-btn"
-          onClick={() => {
-            handleStopCapturing();
-          }}
-        >
-          Stop
-        </button>
-        <button
-          className="stop-btn"
-          onClick={() => {
-            const spc = navigator.mediaDevices.getSupportedConstraints();
-            const ale = JSON.stringify(spc);
-            navigator.clipboard.writeText(ale);
-          }}
-        >
-          copy
-        </button>
-
-        <button
-          className="start-btn"
-          onClick={() => {
-            handleStartCapturing();
-          }}
-        >
-          Start
-        </button>
+        <span className="timer">{time < 10 ? "0" + time : time}</span>
+        {capturing ? (
+          <button
+            className="stop-btn"
+            onClick={() => {
+              stopVideoCapturing();
+              stopRecording();
+            }}
+          >
+            Stop
+          </button>
+        ) : (
+          <button
+            className="start-btn"
+            onClick={() => {
+              startVideoCapturing();
+              startRecording();
+            }}
+          >
+            Start
+          </button>
+        )}
 
         <button className="toggleCamera" onClick={handleSwap}>
           Flip
@@ -187,7 +219,7 @@ const Wrapper = styled.div`
   .video_container {
     position: absolute;
     inset: 0;
-    height: 80vh;
+    height: 100vh;
     widows: 100vw;
   }
 
@@ -197,7 +229,7 @@ const Wrapper = styled.div`
     height: 70px;
     border-radius: 50%;
     background-color: var(--bg-secondary);
-    border-color: var(--text-success);
+    border-color: orange;
     border-width: 3px;
     border-style: solid;
     font-size: 1rem;
@@ -211,6 +243,9 @@ const Wrapper = styled.div`
   }
 
   .back-button {
+    display: flex;
+    justify-content: space-between;
+    background-color: aqua;
     position: absolute;
     top: 0;
     left: 0;
