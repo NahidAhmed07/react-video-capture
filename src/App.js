@@ -99,13 +99,10 @@ export default function App() {
   }
 
   const videoConstraints = {
-    width: {ideal:480},
-    height: {ideal:720},
-    aspectRatio:9/16,
-    frameRate:{
-      min:25,
-      ideal:30,
-    }
+    width: {ideal:480, min:240},
+    height: 720,
+    frameRate: 30,
+    aspectRatio:{ exact: 0.5625 },
   };
   const audioConstraints = {
     suppressLocalAudioPlayback: false,
