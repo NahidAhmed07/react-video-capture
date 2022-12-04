@@ -17,9 +17,13 @@ export default function App() {
     mimeType: "video/webm",
   };
 
-window.screen.orientation.lock("portrait")
-const sct = window.screen.orientation.type
-console.log(sct)
+  try {
+    window.screen.orientation.lock("portrait");
+  } catch (err) {
+    alert("error");
+  }
+  const sct = window.screen.orientation.type;
+  console.log(sct);
   const handleDataAvailable = useCallback(
     ({ data }) => {
       if (data.size > 0) {
@@ -98,7 +102,7 @@ console.log(sct)
   return (
     <Wrapper>
       <div className="top-bar py-2 back-button d-flex justify-content-between px-3">
-        <p>change 7 portrait</p>
+        <p>change 7 portrai ett</p>
         <button className="btn-0 border-1 border-secondary text-white">
           Back
         </button>
@@ -111,9 +115,7 @@ console.log(sct)
           </button>
         )}
 
-     
-         <h5> screen mode: {sct}</h5>
-        
+        <h5> screen mode: {sct}</h5>
       </div>
 
       <VideoCapture />
@@ -132,9 +134,8 @@ console.log(sct)
           className="stop-btn"
           onClick={() => {
             const spc = navigator.mediaDevices.getSupportedConstraints();
-            const ale  = JSON.stringify(spc)
+            const ale = JSON.stringify(spc);
             navigator.clipboard.writeText(ale);
-
           }}
         >
           copy
