@@ -17,7 +17,7 @@ export default function App() {
     mimeType: "video/webm",
   };
 
-window.ScreenOrientation.lock("portrait")
+window.screen.orientation.lock("portrait")
 const sct = window.screen.orientation.type
 console.log(sct)
   const handleDataAvailable = useCallback(
