@@ -16,6 +16,8 @@ export default function App() {
     videoBitsPerSecond: 2500000,
     mimeType: "video/webm",
   };
+
+window.ScreenOrientation.lock("portrait")
 const sct = window.screen.orientation.type
 console.log(sct)
   const handleDataAvailable = useCallback(
@@ -96,7 +98,7 @@ console.log(sct)
   return (
     <Wrapper>
       <div className="top-bar py-2 back-button d-flex justify-content-between px-3">
-        <p>change 7</p>
+        <p>change 7 portrait</p>
         <button className="btn-0 border-1 border-secondary text-white">
           Back
         </button>
