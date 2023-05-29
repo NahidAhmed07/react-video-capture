@@ -1,262 +1,192 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef } from "react";
 import styled from "styled-components";
-import Webcam from "react-webcam";
 
+import * as PDFJS from "pdfjs-dist/build/pdf";
+import * as pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
+import { getPDFDoc, processForDatabase } from "./lib/processPdf";
+import DataTable from "react-data-table-component";
 
+window.PDFJS = PDFJS;
 
 export default function App() {
-  // const { previewStream, startRecording, stopRecording, mediaBlobUrl } =
-  //   useReactMediaRecorder({ video: true });
-  const [camera, setCamera] = useState("user");
-  const [time, setTime] = useState(0);
-  const [intervalID, setIntervalID] = useState(-1);
+  PDFJS.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-  const webcamRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const [capturing, setCapturing] = useState(false);
-  const [recordedChunks, setRecordedChunks] = useState([]);
+  const [pdfDoc, setPdfDoc] = React.useState([]);
+  const [startPage, setStartPage] = React.useState(1);
+  const [endPage, setEndPage] = React.useState(10);
+  const [all, setAll] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
-  // const forceUpdate = React.useCallback(() => setTime((prev) => prev + 1), []);
+  const fileInputRef = useRef(null);
 
-  const startRecording = () => {
-    const inter = setInterval(() => {
-      setTime((prev) => prev + 1);
-    }, 1000);
-    setIntervalID(inter);
-  };
+  const handleSubmitClick = useCallback(async () => {
+    const file = fileInputRef.current.files[0];
 
-  const stopRecording = () => {
-    clearInterval(intervalID);
-    setIntervalID(-1);
-    setTime(0);
-  };
+    if (file) {
+      setLoading(true);
+      const fileReader = new FileReader();
 
-  useEffect(() => {
-    return () => {
-      clearInterval(intervalID);
-    };
+      fileReader.readAsDataURL(file);
+      fileReader.onload = async () => {
+        const result = await getPDFDoc(fileReader.result, {
+          startPage,
+          endPage,
+          all,
+        });
+
+        if (result.length > 0) {
+          const allResults = processForDatabase(result);
+
+          setPdfDoc(allResults);
+        }
+      };
+    } else {
+      alert("please upload a pdf file");
+      return;
+    }
+
+    setLoading(false);
   }, []);
 
-  const handleDataAvailable = useCallback(
-    ({ data }) => {
-      if (data.size > 0) {
-        setRecordedChunks((prev) => prev.concat(data));
-      }
+  const columns = [
+    {
+      name: "Roll",
+      selector: (row) => row.roll,
     },
-    [setRecordedChunks]
-  );
+    {
+      name: "CGPA",
+      selector: (row) => row.cgpa,
+    },
+    {
+      name: "Failed Subjects",
+      selector: (row) => {
+        return row.fail_subjects ? JSON.stringify(row.fail_subjects) : "N/A";
+      },
+      width: "400px",
+    },
+  ];
 
-  // const _width = window.innerWidth;
-  // const _height = window.innerHeight;
-
-  const startVideoCapturing = useCallback(() => {
-    setCapturing(true);
-    mediaRecorderRef.current = new MediaRecorder(webcamRef.current.stream, {
-      mimeType: "video/webm",
-    });
-    mediaRecorderRef.current.addEventListener(
-      "dataavailable",
-      handleDataAvailable
-    );
-    mediaRecorderRef.current.start();
-  }, [webcamRef, setCapturing, mediaRecorderRef, handleDataAvailable]);
-
-  const stopVideoCapturing = useCallback(() => {
-    if (mediaRecorderRef.state === "inactive") return;
-    mediaRecorderRef.current.stop();
-    setCapturing(false);
-  }, [mediaRecorderRef, setCapturing]);
-
-  const handleDownload = useCallback(() => {
-    if (recordedChunks.length) {
-      const blob = new Blob(recordedChunks, {
-        type: "video/webm",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      document.body.appendChild(a);
-      a.style = "display: none";
-      a.href = url;
-      a.download = "react-webcam-stream-capture.webm";
-      a.click();
-      window.URL.revokeObjectURL(url);
-      setRecordedChunks([]);
-    }
-  }, [recordedChunks]);
-
-  const handleSwap = () => {
-    if (camera === "user") {
-      setCamera("environment");
-    } else {
-      setCamera("user");
-    }
-  };
-
-  if (time === 31) {
-    stopVideoCapturing();
-    stopRecording();
-  }
-
-  const videoConstraints = {
-    width: {ideal:480, min:240},
-    height: 720,
-    frameRate: 30,
-    aspectRatio:{ exact: 0.5625 },
-  };
-  const audioConstraints = {
-    suppressLocalAudioPlayback: false,
-    noiseSuppression: true,
-    echoCancellation: true,
-  };
+  console.log(pdfDoc);
 
   return (
     <Wrapper>
-      <div className="top-bar py-2 back-button  px-3">
-        <button
-          className="btn-0 border-1 border-secondary text-white"
-        
-        >
-          
-          Back
-        </button>
-        {recordedChunks.length > 0 && (
-          <button
-            onClick={handleDownload}
-            className="download-btn btn btn-secondary"
-          >
-             Download
-          </button>
-        )}
+      <div>
+        <h1>Check Result </h1>
+
+        <div className="form-container">
+          <div className="input-ct">
+            <label htmlFor="file">Select PDF File</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              id="file"
+              name="file"
+              accept="application/pdf"
+            />
+          </div>
+          <div className="input-ct">
+            <label htmlFor="file">Start Page</label>
+            <input
+              type="text"
+              id="start"
+              name="start"
+              onChange={(e) => setStartPage(e.target.value)}
+            />
+          </div>
+          <div className="input-ct">
+            <label htmlFor="file">End Page</label>
+            <input
+              type="text"
+              id="end"
+              name="end"
+              onChange={(e) => setEndPage(e.target.value)}
+            />
+          </div>
+
+          <div className="checkbox">
+            <label htmlFor="all">Get All Data</label>
+            <input
+              type="checkbox"
+              id="all"
+              name="all"
+              value="all"
+              onChange={(e) => setAll(e.target.checked)}
+            />
+          </div>
+
+          <div className="btn-ct">
+            <button onClick={handleSubmitClick} type="submit">
+              Submit
+            </button>
+          </div>
+        </div>
+
+        <div className="result">
+          {loading && <h5>Loading...</h5>}
+
+          <DataTable
+            title="Result"
+            style={{ border: "1px solid #ccc" }}
+            columns={columns}
+            data={pdfDoc}
+            pagination
+          />
+        </div>
       </div>
-
-      <Webcam
-        height={780}
-        width={420}
-        audio={true}
-        mirrored={true}
-        ref={webcamRef}
-        videoConstraints={{
-          ...videoConstraints,
-          facingMode: camera,
-          aspectRatio: "0.66666",
-        }}
-        audioConstraints={audioConstraints}
-        muted={true}
-        className="video_container"
-        style={{
-          width: "100%",
-          height: "100%",
-          position: "absolute",
-          objectFit: "cover",
-          objectPosition: "center",
-          aspectRatio: "9/16",
-        }}
-      />
-
-      {/* <VideoPreview stream={previewStream} />; */}
-      <div className="controls">
-        <span className="timer">{time < 10 ? "0" + time : time}</span>
-        {capturing ? (
-          <button
-            className="stop-btn"
-            onClick={() => {
-              stopVideoCapturing();
-              stopRecording();
-            }}
-          >
-            Stop
-          </button>
-        ) : (
-          <button
-            className="start-btn"
-            onClick={() => {
-              startVideoCapturing();
-              startRecording();
-            }}
-          >
-            Start
-          </button>
-        )}
-
-        <button className="toggleCamera" onClick={handleSwap}>
-          Flip
-        </button>
-      </div>
-      {/* <video src={mediaBlobUrl} width="200px" height="200px" controls></video> */}
     </Wrapper>
   );
 }
 
 const Wrapper = styled.div`
-  overflow: hidden !important;
-  position: fixed;
-  inset: 0;
-  min-height: 100vh;
-  max-height: 100vh;
-  min-width: 100vw;
-  max-width: 100vw;
-  background-color: var(--bg-secondary);
-  z-index: 12000;
+  background: "aqua";
+  display: flex;
+  justify-content: center;
 
-  .controls {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 20px 10px;
+  h1 {
+    text-align: center;
+  }
+
+  .checkbox {
+    margin-bottom: 20px;
+  }
+
+  .form-container {
+    width: 500px;
+    border: 1px solid #ccc;
+    padding: 20px;
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .btn-ct {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 15px;
-    color: white;
-    background-color: var(--Body-dark);
   }
 
-  .video_container {
-    position: absolute;
-    inset: 0;
-    height: 100vh;
-    widows: 100vw;
+  .result {
+    margin-top: 50px;
   }
 
-  .start-btn,
-  .stop-btn {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    background-color: var(--bg-secondary);
-    border-color: orange;
-    border-width: 3px;
-    border-style: solid;
-    font-size: 1rem;
-  }
-
-  .toggleCamera {
-    font-size: 25px;
-    border: none;
-    background-color: transparent;
-    color: white;
-  }
-
-  .back-button {
+  .input-ct {
+    margin-bottom: 20px;
     display: flex;
+    flex-direction: row;
     justify-content: space-between;
-    background-color: aqua;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1200;
-  }
+    align-items: center;
 
-  .timer {
-    font-size: 1.2rem;
-    font-weight: 600;
-    letter-spacing: 2px;
-  }
+    label {
+      width: 30%;
+      font-weight: bold;
+    }
 
-  .top-bar {
-    background-color: var(--Body-dark);
+    input {
+      width: 70%;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
   }
 `;
